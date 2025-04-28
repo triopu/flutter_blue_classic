@@ -354,37 +354,43 @@ class FlutterBlueClassicPlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         permissionManager.ensurePermissions(permissions.toTypedArray()) { success: Boolean, deniedPermissions: List<String>? ->
             if (success) {
                 val device = bluetoothAdapter?.getRemoteDevice(address)
-                
-                // Register a receiver to listen for bond state changes
+                if (device == null) {
+                    result.success(false)
+                    return@ensurePermissions
+                }
+
+                // Capture address and result
                 val bondStateReceiver = object : BroadcastReceiver() {
                     override fun onReceive(context: Context, intent: Intent) {
                         val action = intent.action
                         if (BluetoothDevice.ACTION_BOND_STATE_CHANGED == action) {
-                            val deviceAddress = intent.getStringExtra(BluetoothDevice.EXTRA_DEVICE)?.address
-                            val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.EXTRA_BOND_STATE_NONE)
+                            val bondedDevice: BluetoothDevice? = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                            val bondState = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)
 
-                            if (deviceAddress == address) {
-                                if (bondState == BluetoothDevice.BOND_BONDED) {
-                                    result.success(true) // Successfully bonded
-                                } else if (bondState == BluetoothDevice.BOND_NONE) {
-                                    result.success(false) // Bonding failed
+                            if (bondedDevice?.address == address) {
+                                when (bondState) {
+                                    BluetoothDevice.BOND_BONDED -> {
+                                        result.success(true) // Successfully bonded
+                                    }
+                                    BluetoothDevice.BOND_NONE -> {
+                                        result.success(false) // Bonding failed
+                                    }
                                 }
-
-                                // Unregister the receiver after we get the result
-                                context.unregisterReceiver(this)
+                                // Unregister receiver after result
+                                applicationContext.unregisterReceiver(this)
                             }
                         }
                     }
                 }
 
-                // Register the receiver for bond state changes
+                // Register the receiver
                 val filter = IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
-                context.registerReceiver(bondStateReceiver, filter)
+                applicationContext.registerReceiver(bondStateReceiver, filter)
 
-                // Initiate bonding
-                val isBonded = device?.createBond() ?: false
-                if (!isBonded) {
-                    result.success(false) // If createBond fails immediately
+                // Start bonding
+                val isBondingStarted = device.createBond()
+                if (!isBondingStarted) {
+                    result.success(false) // If createBond immediately fails
                 }
             } else {
                 result.error(
@@ -397,6 +403,7 @@ class FlutterBlueClassicPlugin : FlutterPlugin, MethodCallHandler, ActivityAware
             }
         }
     }
+
 
 
 
