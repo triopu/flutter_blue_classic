@@ -1,5 +1,7 @@
 package dev.lenhart.flutter_blue_classic
 
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Application
