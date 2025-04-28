@@ -64,6 +64,8 @@ class FlutterBlueClassicPlugin : FlutterPlugin, MethodCallHandler, ActivityAware
 
     private var context: Application? = null
 
+    private lateinit var applicationContext: Context
+
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         methodChannel =
             MethodChannel(
@@ -113,6 +115,8 @@ class FlutterBlueClassicPlugin : FlutterPlugin, MethodCallHandler, ActivityAware
         val bluetoothManager =
             getSystemService(flutterPluginBinding.applicationContext, BluetoothManager::class.java)
         bluetoothAdapter = bluetoothManager?.adapter
+
+        applicationContext = flutterPluginBinding.applicationContext
 
     }
 
